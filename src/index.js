@@ -35,7 +35,7 @@ function network(url, chainId) {
 
 function convertStringToBytes(str) {
 	if (typeof str !== "string") {
-	throw new Error("str expects a string")
+	    throw new Error("str expects a string")
 	}
 	var myBuffer = [];
 	var buffer = Buffer.from(str, 'utf8');
