@@ -85,7 +85,7 @@ Cosmos.prototype.getAccounts = function(address) {
 		accountsApi = "/auth/accounts/";
 	}
 	return fetch(this.url + accountsApi + address)
-		.then(response => response.json())
+	.then(response => response.json())
 }
 
 Cosmos.prototype.getAddress = function(mnemonic, checkSum = true) {
