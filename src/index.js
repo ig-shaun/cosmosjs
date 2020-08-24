@@ -161,7 +161,7 @@ Cosmos.prototype.broadcast = function(signedTx) {
 		},
 		body: JSON.stringify(signedTx)
 	})
-		.then(response => response.json())
+	.then(response => response.json())
 }
 
 module.exports = {
