@@ -90,7 +90,7 @@ Cosmos.prototype.getAccounts = function(address) {
 
 Cosmos.prototype.getAddress = function(mnemonic, checkSum = true) {
 	if (typeof mnemonic !== "string") {
-		throw new Error("mnemonic expects a string")
+	    throw new Error("mnemonic expects a string")
 	}
 	if (checkSum) {
 		if (!bip39.validateMnemonic(mnemonic)) throw new Error("mnemonic phrases have invalid checksums");
