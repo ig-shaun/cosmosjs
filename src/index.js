@@ -35,17 +35,22 @@ function network(url, chainId) {
 
 function convertStringToBytes(str) {
 	if (typeof str !== "string") {
-		throw new Error("str expects a string")
+	    throw new Error("str expects a string")
 	}
 	var myBuffer = [];
 	var buffer = Buffer.from(str, 'utf8');
 	for (var i = 0; i < buffer.length; i++) {
-		myBuffer.push(buffer[i]);
+	    myBuffer.push(buffer[i]);
 	}
 	return myBuffer;
 }
 
-function getPubKeyBase64(ixoDid) {
+function getPubKeyBase64(ecpairPriv) {
+	const pubKeyByte = secp256k1.publicKeyCreate(ecpairPriv);
+	return Buffer.from(pubKeyByte, 'binary').toString('base64');
+}
+
+function getPubKeyBase64FromIxoDid(ixoDid) {
 	return base58.decode(ixoDid.verifyKey).toString('base64');
 }
 
@@ -85,10 +90,24 @@ Cosmos.prototype.getAccounts = function(address) {
 		accountsApi = "/auth/accounts/";
 	}
 	return fetch(this.url + accountsApi + address)
-		.then(response => response.json())
+	.then(response => response.json())
 }
 
 Cosmos.prototype.getAddress = function(mnemonic, checkSum = true) {
+	if (typeof mnemonic !== "string") {
+	    throw new Error("mnemonic expects a string")
+	}
+	if (checkSum) {
+		if (!bip39.validateMnemonic(mnemonic)) throw new Error("mnemonic phrases have invalid checksums");
+	}
+	const seed = bip39.mnemonicToSeed(mnemonic);
+	const node = bip32.fromSeed(seed);
+	const child = node.derivePath(this.path);
+	const words = bech32.toWords(child.identifier);
+	return bech32.encode(this.bech32MainPrefix, words);
+}
+
+Cosmos.prototype.getIxoAddress = function(mnemonic, checkSum = true) {
 	if (typeof mnemonic !== "string") {
 		throw new Error("mnemonic expects a string")
 	}
@@ -98,6 +117,17 @@ Cosmos.prototype.getAddress = function(mnemonic, checkSum = true) {
 	const ixoDid = Cosmos.prototype.getIxoDid(mnemonic)
 	const verifyKey = crypto.createHash('sha256').update(base58.decode(ixoDid.verifyKey)).digest('bytes').slice(0, 20)
 	return bech32.encode(this.bech32MainPrefix, bech32.toWords(verifyKey));
+}
+
+Cosmos.prototype.getECPairPriv = function(mnemonic) {
+	if (typeof mnemonic !== "string") {
+	    throw new Error("mnemonic expects a string")
+	}
+	const seed = bip39.mnemonicToSeed(mnemonic);
+	const node = bip32.fromSeed(seed);
+	const child = node.derivePath(this.path);
+	const ecpair = bitcoinjs.ECPair.fromPrivateKey(child.privateKey, {compressed : false})
+	return ecpair.privateKey;
 }
 
 Cosmos.prototype.getIxoDid = function(mnemonic) {
@@ -116,11 +146,151 @@ Cosmos.prototype.newStdMsg = function(input) {
 	const stdSignMsg = new Object;
 	stdSignMsg.json = input;
 
+	// Exception
+	if (input.msgs[0].type == "irishub/bank/Send") {
+		stdSignMsg.jsonForSigningIrisTx =
+		{
+			msgs: [
+				{
+					inputs: [
+						{
+							address: input.msgs[0].value.inputs[0].address,
+							coins: [
+								{
+									denom: input.msgs[0].value.inputs[0].coins[0].denom,
+									amount: input.msgs[0].value.inputs[0].coins[0].amount
+								}
+							]
+						}
+					],
+					outputs: [
+						{
+							address: input.msgs[0].value.outputs[0].address,
+							coins: [
+								{
+									denom: input.msgs[0].value.outputs[0].coins[0].denom,
+									amount: input.msgs[0].value.outputs[0].coins[0].amount
+								}
+							]
+						}
+					]
+				}
+			],
+			chain_id: input.msgs[0].chain_id,
+			fee: { amount: [ { amount: input.msgs[0].fee.amount[0].amount, denom: input.msgs[0].fee.amount[0].denom } ], gas: input.msgs[0].fee.gas },
+			memo: input.msgs[0].memo,
+			account_number: input.msgs[0].account_number,
+			sequence: input.msgs[0].sequence
+		}
+	} else if (input.msgs[0].type == "irishub/stake/BeginUnbonding") {
+		stdSignMsg.jsonForSigningIrisTx =
+		{
+			msgs: [
+				{
+					shares_amount: String(input.msgs[0].value.shares_amount),
+					delegator_addr: input.msgs[0].value.delegator_addr,
+					validator_addr: input.msgs[0].value.validator_addr
+				}
+			],
+			chain_id: input.msgs[0].chain_id,
+			fee: { amount: [ { amount: input.msgs[0].fee.amount[0].amount, denom: input.msgs[0].fee.amount[0].denom } ], gas: input.msgs[0].fee.gas },
+			memo: input.msgs[0].memo,
+			account_number: input.msgs[0].account_number,
+			sequence: input.msgs[0].sequence
+		}
+	} else if (input.msgs[0].type == "irishub/stake/BeginRedelegate") {
+		stdSignMsg.jsonForSigningIrisTx =
+		{
+			msgs: [
+				{
+					delegator_addr: input.msgs[0].value.delegator_addr,
+					validator_src_addr: input.msgs[0].value.validator_src_addr,
+					validator_dst_addr: input.msgs[0].value.validator_dst_addr,
+					shares: String(input.msgs[0].value.shares_amount) + ".0000000000"		// IRIS Exception) For signing, shares is correct.
+				}
+			],
+			chain_id: input.msgs[0].chain_id,
+			fee: { amount: [ { amount: input.msgs[0].fee.amount[0].amount, denom: input.msgs[0].fee.amount[0].denom } ], gas: input.msgs[0].fee.gas },
+			memo: input.msgs[0].memo,
+			account_number: input.msgs[0].account_number,
+			sequence: input.msgs[0].sequence
+		}
+	}
+
 	stdSignMsg.bytes = convertStringToBytes(JSON.stringify(sortObject(stdSignMsg.json)));
 	return stdSignMsg;
 }
 
-Cosmos.prototype.sign = function(stdSignMsg, ixoDid, modeType = "sync") {
+Cosmos.prototype.sign = function(stdSignMsg, ecpairPriv, modeType = "sync") {
+	// The supported return types includes "block"(return after tx commit), "sync"(return after CheckTx) and "async"(return right away).
+	let signMessage = new Object;
+	if (stdSignMsg.json.msgs[0].type == "irishub/bank/Send" ||
+		stdSignMsg.json.msgs[0].type == "irishub/stake/BeginUnbonding" ||
+		stdSignMsg.json.msgs[0].type == "irishub/stake/BeginRedelegate") {
+		signMessage = stdSignMsg.jsonForSigningIrisTx;
+	} else {
+		signMessage = stdSignMsg.json;
+	}
+	const hash = crypto.createHash('sha256').update(JSON.stringify(sortObject(signMessage))).digest('hex');
+	const buf = Buffer.from(hash, 'hex');
+	let signObj = secp256k1.sign(buf, ecpairPriv);
+	var signatureBase64 = Buffer.from(signObj.signature, 'binary').toString('base64');
+	let signedTx = new Object;
+	if (this.chainId.indexOf("irishub") != -1) {
+		signedTx = {
+		    "tx": {
+		        "msg": stdSignMsg.json.msgs,
+		        "fee": stdSignMsg.json.fee,
+		        "signatures": [
+		            {
+		                "signature": signatureBase64,
+		                "account_number": stdSignMsg.json.account_number,
+                		"sequence": stdSignMsg.json.sequence,
+		                "pub_key": {
+		                    "type": "tendermint/PubKeySecp256k1",
+		                    "value": getPubKeyBase64(ecpairPriv)
+		                }
+		            }
+		        ],
+		        "memo": stdSignMsg.json.memo
+		    },
+		    "mode": modeType
+		}
+
+		// The key of "shares" is using to sign for IRIS Redelegate.
+		// After signing, you have to replace the "shares" key name to "shares_amount".
+		// It is an exception to "irishub/stake/BeginRedelegate".
+		if (stdSignMsg.json.msgs[0].type == "irishub/stake/BeginRedelegate") {
+			var txBodyStr = JSON.stringify(signedTx);
+			txBodyStr = txBodyStr.replace("\"shares", "\"shares_amount");
+			signedTx = JSON.parse(txBodyStr);
+		}
+	} else {
+		signedTx = {
+		    "tx": {
+		        "msg": stdSignMsg.json.msgs,
+		        "fee": stdSignMsg.json.fee,
+		        "signatures": [
+		            {
+		            	"account_number": stdSignMsg.json.account_number,
+		            	"sequence": stdSignMsg.json.sequence,
+		                "signature": signatureBase64,
+		                "pub_key": {
+		                    "type": "tendermint/PubKeySecp256k1",
+		                    "value": getPubKeyBase64(ecpairPriv)
+		                }
+		            }
+		        ],
+		        "memo": stdSignMsg.json.memo
+		    },
+		    "mode": modeType
+		}
+	}
+
+	return signedTx;
+}
+
+Cosmos.prototype.signIxo = function(stdSignMsg, ixoDid, modeType = "sync") {
 	// The supported return types includes "block"(return after tx commit), "sync"(return after CheckTx) and "async"(return right away).
 	let signMessage = stdSignMsg.json;
 	let signObj = sovrin.signMessage(JSON.stringify(sortObject(signMessage)), ixoDid.secret.signKey, ixoDid.verifyKey);
@@ -136,7 +306,7 @@ Cosmos.prototype.sign = function(stdSignMsg, ixoDid, modeType = "sync") {
 					"signature": signatureBase64,
 					"pub_key": {
 						"type": "tendermint/PubKeyEd25519",
-						"value": getPubKeyBase64(ixoDid)
+						"value": getPubKeyBase64FromIxoDid(ixoDid)
 					}
 				}
 			],

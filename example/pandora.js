@@ -3,15 +3,15 @@ const cosmosjs = require("../src");
 // [WARNING] This mnemonic is just for the demo purpose. DO NOT USE THIS MNEMONIC for your own wallet.
 const mnemonic = "broken differ fantasy office unique vague orphan census educate mesh shield disorder";
 const chainId = "pandora-1";
-const cosmos = cosmosjs.network("http://localhost:1317", chainId);
-cosmos.setBech32MainPrefix("ixo");
-cosmos.setPath("m/44'/118'/0'/0/0");
-const address = cosmos.getAddress(mnemonic);
-const ixoDid = cosmos.getIxoDid(mnemonic);
+const ixo = cosmosjs.network("http://localhost:1317", chainId);
+ixo.setBech32MainPrefix("ixo");
+ixo.setPath("m/44'/118'/0'/0/0");
+const address = ixo.getIxoAddress(mnemonic);
+const ixoDid = ixo.getIxoDid(mnemonic);
 
 // Generate MsgSend transaction and broadcast
-cosmos.getAccounts(address).then(data => {
-  let stdSignMsg = cosmos.newStdMsg({
+ixo.getAccounts(address).then(data => {
+  let stdSignMsg = ixo.newStdMsg({
     msgs: [
       {
         type: "cosmos-sdk/MsgSend",
@@ -34,6 +34,6 @@ cosmos.getAccounts(address).then(data => {
     sequence: String(data.result.value.sequence)
   });
 
-  const signedTx = cosmos.sign(stdSignMsg, ixoDid);
-  cosmos.broadcast(signedTx).then(response => console.log(response));
+  const signedTx = ixo.signIxo(stdSignMsg, ixoDid);
+  ixo.broadcast(signedTx).then(response => console.log(response));
 })
