@@ -10,8 +10,10 @@ const bip39 = require('bip39');
 const bip32 = require('bip32');
 const bech32 = require('bech32');
 const secp256k1 = require('secp256k1');
+const sovrin = require('sovrin-did');
 const crypto = require('crypto');
 const bitcoinjs = require('bitcoinjs-lib');
+const base58 = require('bs58');
 
 let Cosmos = function(url, chainId) {
 	this.url = url;
@@ -46,6 +48,10 @@ function convertStringToBytes(str) {
 function getPubKeyBase64(ecpairPriv) {
 	const pubKeyByte = secp256k1.publicKeyCreate(ecpairPriv);
 	return Buffer.from(pubKeyByte, 'binary').toString('base64');
+}
+
+function getPubKeyBase64FromIxoDid(ixoDid) {
+	return base58.decode(ixoDid.verifyKey).toString('base64');
 }
 
 function sortObject(obj) {
@@ -101,6 +107,18 @@ Cosmos.prototype.getAddress = function(mnemonic, checkSum = true) {
 	return bech32.encode(this.bech32MainPrefix, words);
 }
 
+Cosmos.prototype.getIxoAddress = function(mnemonic, checkSum = true) {
+	if (typeof mnemonic !== "string") {
+	    throw new Error("mnemonic expects a string")
+	}
+	if (checkSum) {
+		if (!bip39.validateMnemonic(mnemonic)) throw new Error("mnemonic phrases have invalid checksums");
+	}
+	const ixoDid = Cosmos.prototype.getIxoDid(mnemonic)
+	const verifyKey = crypto.createHash('sha256').update(base58.decode(ixoDid.verifyKey)).digest('bytes').slice(0, 20)
+	return bech32.encode(this.bech32MainPrefix, bech32.toWords(verifyKey));
+}
+
 Cosmos.prototype.getECPairPriv = function(mnemonic) {
 	if (typeof mnemonic !== "string") {
 	    throw new Error("mnemonic expects a string")
@@ -110,6 +128,18 @@ Cosmos.prototype.getECPairPriv = function(mnemonic) {
 	const child = node.derivePath(this.path);
 	const ecpair = bitcoinjs.ECPair.fromPrivateKey(child.privateKey, {compressed : false})
 	return ecpair.privateKey;
+}
+
+Cosmos.prototype.getIxoDid = function(mnemonic) {
+	if (typeof mnemonic !== "string") {
+		throw new Error("mnemonic expects a string")
+	}
+	const seed = crypto.createHash('sha256').update(mnemonic).digest("hex");
+	const didSeed = new Uint8Array(32);
+	for (let i = 0; i < 32; ++i) {
+		didSeed[i] = parseInt(seed.substring(i * 2, i * 2 + 2), 16)
+	}
+	return sovrin.fromSeed(didSeed);
 }
 
 Cosmos.prototype.newStdMsg = function(input) {
@@ -258,6 +288,32 @@ Cosmos.prototype.sign = function(stdSignMsg, ecpairPriv, modeType = "sync") {
 	}
 
 	return signedTx;
+}
+
+Cosmos.prototype.signIxo = function(stdSignMsg, ixoDid, modeType = "sync") {
+	// The supported return types includes "block"(return after tx commit), "sync"(return after CheckTx) and "async"(return right away).
+	let signMessage = stdSignMsg.json;
+	let signObj = sovrin.signMessage(JSON.stringify(sortObject(signMessage)), ixoDid.secret.signKey, ixoDid.verifyKey);
+	var signatureBase64 = Buffer.from(signObj, 'binary').slice(0, 64).toString('base64');
+	return {
+		"tx": {
+			"msg": stdSignMsg.json.msgs,
+			"fee": stdSignMsg.json.fee,
+			"signatures": [
+				{
+					"account_number": stdSignMsg.json.account_number,
+					"sequence": stdSignMsg.json.sequence,
+					"signature": signatureBase64,
+					"pub_key": {
+						"type": "tendermint/PubKeyEd25519",
+						"value": getPubKeyBase64FromIxoDid(ixoDid)
+					}
+				}
+			],
+			"memo": stdSignMsg.json.memo
+		},
+		"mode": modeType
+	}
 }
 
 Cosmos.prototype.broadcast = function(signedTx) {
