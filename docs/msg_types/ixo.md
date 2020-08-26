@@ -25,7 +25,7 @@ In this docs, these are supporting message types in ixo Pandora.
 
 ```js
 // cosmos-sdk/MsgSend
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgSend",
@@ -53,7 +53,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgMultiSend
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgMultiSend",
@@ -95,7 +95,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgCreateValidator
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgCreateValidator",
@@ -134,7 +134,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgEditValidator
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgEditValidator",
@@ -163,7 +163,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgDelegate
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgDelegate",
@@ -189,7 +189,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgUndelegate
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgUndelegate",
@@ -215,7 +215,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgBeginRedelegate
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgBeginRedelegate",
@@ -242,7 +242,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgWithdrawDelegationReward
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgWithdrawDelegationReward",
@@ -264,7 +264,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgWithdrawValidatorCommission
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgWithdrawValidatorCommission",
@@ -285,7 +285,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgModifyWithdrawAddress
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgModifyWithdrawAddress",
@@ -307,7 +307,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgSubmitProposal
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgSubmitProposal",
@@ -337,7 +337,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgDeposit
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgDeposit",
@@ -365,7 +365,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgVote
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgVote",
@@ -388,7 +388,7 @@ let stdSignMsg = cosmos.newStdMsg({
 
 ```js
 // cosmos-sdk/MsgUnjail
-let stdSignMsg = cosmos.newStdMsg({
+let stdSignMsg = ixo.newStdMsg({
 	msgs: [
 		{
 			type: "cosmos-sdk/MsgUnjail",
