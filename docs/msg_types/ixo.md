@@ -4,6 +4,7 @@ In this docs, these are supporting message types in ixo Pandora.
 
 ### Supporting Message Types
 
+#### Standard Cosmos Messages
 - [cosmos-sdk/MsgSend](#msgsend)
 - [cosmos-sdk/MsgMultiSend](#msgmultisend)
 - [cosmos-sdk/MsgCreateValidator](#msgcreatevalidator)
@@ -19,7 +20,8 @@ In this docs, these are supporting message types in ixo Pandora.
 - [cosmos-sdk/MsgVote](#msgvote)
 - [cosmos-sdk/MsgUnjail](#msgunjail)
 
-###  MsgSend
+#### Custom ixo Messages
+- [did/AddDid](#msgadddid)
 
 ```js
 // cosmos-sdk/MsgSend
@@ -397,6 +399,28 @@ let stdSignMsg = cosmos.newStdMsg({
 	],
 	chain_id: chainId,
 	fee: { amount: [ { amount: String(5000), denom: "uixo" } ], gas: String(200000) },
+	memo: "",
+	account_number: String(data.result.value.account_number),
+	sequence: String(data.result.value.sequence)
+});
+```
+
+### MsgAddDid
+
+```js
+// did/AddDid
+let stdSignMsg = ixo.newStdMsg({
+	msgs: [
+		{
+			type: "did/AddDid",
+			value: {
+				did: "did:sov:Q4KV9v8jVqMP8VqQcjN4g6",
+				pubKey: "DZtHJ1tK9K36uFU9wUXcZvJUuM4TnjrpfmSEAQ7VjZu9",
+			}
+		}
+	],
+	chain_id: chainId,
+	fee: { amount: [ { amount: String(0), denom: "uixo" } ], gas: String(200000) },
 	memo: "",
 	account_number: String(data.result.value.account_number),
 	sequence: String(data.result.value.sequence)
