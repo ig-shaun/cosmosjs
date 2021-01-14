@@ -115,7 +115,7 @@ Cosmos.prototype.getIxoAddress = function(mnemonic, checkSum = true) {
 		if (!bip39.validateMnemonic(mnemonic)) throw new Error("mnemonic phrases have invalid checksums");
 	}
 	const ixoDid = Cosmos.prototype.getIxoDid(mnemonic)
-	const verifyKey = crypto.createHash('sha256').update(base58.decode(ixoDid.verifyKey)).digest('bytes').slice(0, 20)
+	const verifyKey = crypto.createHash('sha256').update(base58.decode(ixoDid.verifyKey)).digest().slice(0, 20)
 	return bech32.encode(this.bech32MainPrefix, bech32.toWords(verifyKey));
 }
 
