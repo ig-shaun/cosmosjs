@@ -1,10 +1,8 @@
-# ixo  
+# Message Types  
 
-In this docs, these are supporting message types in ixo Pandora.
+Currently supported by ixo clients.
 
-### Supporting Message Types
-
-#### Standard Cosmos Messages
+## List of message types for standard Cosmos-SDK modules
 - [cosmos-sdk/MsgSend](#msgsend)
 - [cosmos-sdk/MsgMultiSend](#msgmultisend)
 - [cosmos-sdk/MsgCreateValidator](#msgcreatevalidator)
@@ -20,7 +18,7 @@ In this docs, these are supporting message types in ixo Pandora.
 - [cosmos-sdk/MsgVote](#msgvote)
 - [cosmos-sdk/MsgUnjail](#msgunjail)
 
-#### Custom ixo Messages
+## List of messages types for ixo blockchain modules
 - [bonds/MsgCreateBond](#msgcreatebond)
 - [bonds/MsgEditBond](#msgeditbond)
 - [bonds/MsgBuy](#msgbuy)
@@ -48,6 +46,8 @@ In this docs, these are supporting message types in ixo Pandora.
 - [treasury/MsgOracleTransfer](#msgoracletransfer)
 - [treasury/MsgOracleMint](#msgoraclemint)
 - [treasury/MsgOracleBurn](#msgoracleburn)
+
+## Message syntax
 
 ### MsgSend
 
